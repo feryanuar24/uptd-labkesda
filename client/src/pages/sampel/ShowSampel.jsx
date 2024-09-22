@@ -10,6 +10,7 @@ const ShowSampel = () => {
   const [jenisSampel, setJenisSampel] = useState("");
   const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState("");
   const [hasilPemeriksaan, setHasilPemeriksaan] = useState("");
+  const [gambar, setGambar] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const createPDF = () => {
@@ -21,38 +22,61 @@ const ShowSampel = () => {
       doc.text(`Jenis Sampel: ${jenisSampel}`, 10, 30);
       doc.text(`Tanggal Pemeriksaan: ${tanggalPemeriksaan}`, 10, 40);
       doc.text(`Hasil Pemeriksaan: ${hasilPemeriksaan}`, 10, 50);
+      doc.text("Lampiran", 10, 60);
 
-      doc.save(namaPasien + ".pdf");
+      if (gambar) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = "http://localhost:8000" + gambar;
+        img.onload = () => {
+          doc.addImage(img, "JPEG", 10, 70, 100, 100);
+          doc.save(namaPasien + ".pdf");
+        };
+        img.onerror = () => {
+          console.error("Failed to load image");
+          doc.save(namaPasien + ".pdf");
+        };
+      } else {
+        doc.save(namaPasien + ".pdf");
+      }
     }
   };
 
   useEffect(() => {
     const fetchSampel = async () => {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `http://localhost:8000/api/pemeriksaan-sampels/${id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("Token not found");
         }
-      );
 
-      if (!response.ok) {
-        alert("Gagal mendapatkan data sampel");
-        return;
+        const response = await fetch(
+          `http://localhost:8000/api/pemeriksaan-sampels/${id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch sample data");
+        }
+
+        const data = await response.json();
+
+        setNamaPasien(data.nama_pasien);
+        setJenisSampel(data.jenis_sampel);
+        setTanggalPemeriksaan(data.tanggal_pemeriksaan);
+        setHasilPemeriksaan(data.hasil_pemeriksaan);
+        setGambar(data.path_gambar);
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-
-      const data = await response.json();
-
-      setNamaPasien(data.nama_pasien);
-      setJenisSampel(data.jenis_sampel);
-      setTanggalPemeriksaan(data.tanggal_pemeriksaan);
-      setHasilPemeriksaan(data.hasil_pemeriksaan);
     };
 
     fetchSampel();
@@ -105,15 +129,26 @@ const ShowSampel = () => {
               </svg>
             </button>
           </div>
-          <div className="space-y-10">
+          <div className="space-y-5">
             <h1 className="font-bold text-3xl mb-3 text-center">
               Data Sampel Kesehatan Masyarakat
             </h1>
-            <div className="space-y-5">
+            <div className="space-y-3">
               <h2>Nama: {namaPasien}</h2>
               <p>Jenis Sampel: {jenisSampel}</p>
               <p>Tanggal Pemeriksaan: {tanggalPemeriksaan}</p>
               <p>Hasil Pemeriksann: {hasilPemeriksaan}</p>
+              {gambar && (
+                <div>
+                  <h2>Lampiran</h2>
+                  <img
+                    src={"http://localhost:8000" + gambar}
+                    alt={"Lampiran milik pasien " + namaPasien}
+                    width={200}
+                    className="rounded-lg mt-2"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -148,7 +183,7 @@ const ShowSampel = () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Processing...
+            Loading...
           </button>
         </div>
       )}

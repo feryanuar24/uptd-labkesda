@@ -8,6 +8,7 @@ const CreateSampel = () => {
   const [jenisSampel, setJenisSampel] = useState("");
   const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState("");
   const [hasilPemeriksaan, setHasilPemeriksaan] = useState("");
+  const [gambar, setGambar] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -22,11 +23,20 @@ const CreateSampel = () => {
       !hasilPemeriksaan
     ) {
       setProcessing(false);
-      alert("Semua kolom wajib diisi");
+      alert("Kolom selain gambar tidak boleh kosong");
       return;
     }
 
     const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("nama_pasien", namaPasien);
+    formData.append("jenis_sampel", jenisSampel);
+    formData.append("tanggal_pemeriksaan", tanggalPemeriksaan);
+    formData.append("hasil_pemeriksaan", hasilPemeriksaan);
+    if (gambar) {
+      formData.append("gambar", gambar);
+    }
 
     try {
       const response = await fetch(
@@ -34,20 +44,13 @@ const CreateSampel = () => {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            nama_pasien: namaPasien,
-            jenis_sampel: jenisSampel,
-            tanggal_pemeriksaan: tanggalPemeriksaan,
-            hasil_pemeriksaan: hasilPemeriksaan,
-          }),
+          body: formData,
         }
       );
 
       if (!response.ok) {
-        setProcessing(false);
         const data = await response.json();
         alert(data.message);
         return;
@@ -57,17 +60,20 @@ const CreateSampel = () => {
       setJenisSampel("");
       setTanggalPemeriksaan("");
       setHasilPemeriksaan("");
+      setGambar(null);
 
       alert("Data sampel berhasil ditambahkan");
       navigate("/");
     } catch (error) {
       console.error("Gagal menambahkan data sampel", error);
       alert("Gagal menambahkan data sampel");
+    } finally {
+      setProcessing(false);
     }
   };
 
   return (
-    <div className="bg-slate-100 w-full h-screen p-10 text-slate-800">
+    <div className="bg-slate-100 w-full h-[700px] p-10 text-slate-800">
       <div className="w-full bg-white rounded-xl p-5">
         <h6 className="card-title font-bold text-xl">Tambah Data Sampel</h6>
         <div className="mt-7 pt-0.5">
@@ -104,8 +110,9 @@ const CreateSampel = () => {
                     name="jenis-sampel"
                     className="block w-full rounded-md border-0 py-2 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
                     onChange={(e) => setJenisSampel(e.target.value)}
+                    defaultValue="Pilih Opsi"
                   >
-                    <option disabled selected defaultValue={""}>
+                    <option disabled value="Pilih Opsi">
                       Pilih Opsi
                     </option>
                     <option value="Darah">Darah</option>
@@ -147,6 +154,22 @@ const CreateSampel = () => {
                     onChange={(e) => setHasilPemeriksaan(e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="flex flex-col space-y-3">
+                <label
+                  htmlFor="gambar"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Gambar
+                </label>
+                <input
+                  type="file"
+                  id="gambar"
+                  name="gambar"
+                  accept="image/*"
+                  onChange={(e) => setGambar(e.target.files[0])}
+                  className="p-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                />
               </div>
               <div className="space-x-3 flex">
                 <Link to={"/"}>

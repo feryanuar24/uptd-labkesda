@@ -3,12 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const EditSampel = () => {
   const { id } = useParams();
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
   const [namaPasien, setNamaPasien] = useState("");
   const [jenisSampel, setJenisSampel] = useState("");
   const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState("");
   const [hasilPemeriksaan, setHasilPemeriksaan] = useState("");
+  const [gambar, setGambar] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -31,15 +32,16 @@ const EditSampel = () => {
           return;
         }
 
-        setLoading(false);
-
         const data = await response.json();
         setNamaPasien(data.nama_pasien);
         setJenisSampel(data.jenis_sampel);
         setTanggalPemeriksaan(data.tanggal_pemeriksaan);
         setHasilPemeriksaan(data.hasil_pemeriksaan);
+        setGambar(data.path_gambar);
       } catch (error) {
         console.error("An error occurred", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -58,8 +60,17 @@ const EditSampel = () => {
       !hasilPemeriksaan
     ) {
       setProcessing(false);
-      alert("Semua kolom wajib diisi");
+      alert("Kolom selain gambar tidak boleh kosong");
       return;
+    }
+
+    const formData = new FormData();
+    formData.append("nama_pasien", namaPasien);
+    formData.append("jenis_sampel", jenisSampel);
+    formData.append("tanggal_pemeriksaan", tanggalPemeriksaan);
+    formData.append("hasil_pemeriksaan", hasilPemeriksaan);
+    if (gambar) {
+      formData.append("gambar", gambar);
     }
 
     try {
@@ -68,20 +79,13 @@ const EditSampel = () => {
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            nama_pasien: namaPasien,
-            jenis_sampel: jenisSampel,
-            tanggal_pemeriksaan: tanggalPemeriksaan,
-            hasil_pemeriksaan: hasilPemeriksaan,
-          }),
+          body: formData,
         }
       );
 
       if (!response.ok) {
-        setProcessing(false);
         const data = await response.json();
         alert(data.message);
         return;
@@ -91,10 +95,13 @@ const EditSampel = () => {
       setJenisSampel("");
       setTanggalPemeriksaan("");
       setHasilPemeriksaan("");
+      setGambar(null);
       alert("Data sampel berhasil diubah");
       navigate("/");
     } catch (error) {
       console.error("An error occurred", error);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -102,7 +109,7 @@ const EditSampel = () => {
     <div className="relative">
       {/* Start Main */}
       <div
-        className={`bg-slate-100 w-full h-screen p-10 text-slate-800 ${
+        className={`bg-slate-100 w-full h-[700px] p-10 text-slate-800 ${
           loading && "blur"
         }`}
       >
@@ -143,9 +150,9 @@ const EditSampel = () => {
                       name="jenis-sampel"
                       className="block w-full rounded-md border-0 py-2 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
                       onChange={(e) => setJenisSampel(e.target.value)}
-                      value={jenisSampel}
+                      defaultValue="Pilih Opsi"
                     >
-                      <option disabled selected>
+                      <option disabled value="Pilih Opsi">
                         Pilih Opsi
                       </option>
                       <option value="Darah">Darah</option>
@@ -184,12 +191,45 @@ const EditSampel = () => {
                       name="hasil-pemeriksaan"
                       rows={3}
                       className="p-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                      defaultValue={""}
                       onChange={(e) => setHasilPemeriksaan(e.target.value)}
                       value={hasilPemeriksaan}
                     />
                   </div>
                 </div>
+                <div className="flex flex-col space-y-3">
+                  <label
+                    htmlFor="gambar"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Gambar
+                  </label>
+                  <input
+                    type="file"
+                    id="gambar"
+                    name="gambar"
+                    accept="image/*"
+                    onChange={(e) => setGambar(e.target.files[0])}
+                    className="p-3 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+                {gambar && (
+                  <div>
+                    <label
+                      htmlFor="gambar-sebelumnya"
+                      className="block text-sm font-medium leading-6 text-gray-900"
+                    >
+                      Gambar Sebelumnya
+                    </label>
+                    <div>
+                      <img
+                        src={"http://localhost:8000" + gambar}
+                        alt={"Lampiran milik pasien " + namaPasien}
+                        width={200}
+                        className="rounded-md mt-2"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="space-x-3 flex">
                   <Link to={"/"}>
                     <button className="bg-slate-500 rounded-lg px-3 py-1 text-white hover:bg-slate-800 transition-colors duration-300 ease-in-out">
@@ -268,7 +308,7 @@ const EditSampel = () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Processing...
+            Loading...
           </button>
         </div>
       )}

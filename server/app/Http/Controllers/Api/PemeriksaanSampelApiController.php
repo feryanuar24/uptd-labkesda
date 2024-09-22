@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PemeriksaanSampel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PemeriksaanSampelApiController extends Controller
 {
@@ -28,9 +29,22 @@ class PemeriksaanSampelApiController extends Controller
             'jenis_sampel' => 'required|string|max:255',
             'tanggal_pemeriksaan' => 'required|date',
             'hasil_pemeriksaan' => 'required|string|max:255',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $pemeriksaan = PemeriksaanSampel::create($validatedData);
+        $pemeriksaan = new PemeriksaanSampel();
+        $pemeriksaan->nama_pasien = $validatedData['nama_pasien'];
+        $pemeriksaan->jenis_sampel = $validatedData['jenis_sampel'];
+        $pemeriksaan->tanggal_pemeriksaan = $validatedData['tanggal_pemeriksaan'];
+        $pemeriksaan->hasil_pemeriksaan = $validatedData['hasil_pemeriksaan'];
+
+        if ($request->hasFile('gambar')) {
+            $file = $request->file('gambar');
+            $path = $file->store('public/gambar');
+            $pemeriksaan->path_gambar = Storage::url($path);
+        }
+
+        $pemeriksaan->save();
 
         return response()->json($pemeriksaan, 201);
     }
@@ -54,20 +68,31 @@ class PemeriksaanSampelApiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $pemeriksaan = PemeriksaanSampel::find($id);
-
-        if (!$pemeriksaan) {
-            return response()->json(['message' => 'Data not found'], 404);
-        }
-
         $request->validate([
             'nama_pasien' => 'required|string|max:255',
             'jenis_sampel' => 'required|string|max:255',
             'tanggal_pemeriksaan' => 'required|date',
             'hasil_pemeriksaan' => 'required|string|max:255',
+            'gambar' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $pemeriksaan->update($request->all());
+        $pemeriksaan = PemeriksaanSampel::findOrFail($id);
+        $pemeriksaan->nama_pasien = $request->input('nama_pasien');
+        $pemeriksaan->jenis_sampel = $request->input('jenis_sampel');
+        $pemeriksaan->tanggal_pemeriksaan = $request->input('tanggal_pemeriksaan');
+        $pemeriksaan->hasil_pemeriksaan = $request->input('hasil_pemeriksaan');
+
+        if ($request->hasFile('gambar')) {
+            if ($pemeriksaan->path_gambar) {
+                Storage::delete('public/' . $pemeriksaan->path_gambar);
+            }
+
+            $file = $request->file('gambar');
+            $path = $file->store('public/gambar');
+            $pemeriksaan->path_gambar = Storage::url($path);
+        }
+
+        $pemeriksaan->save();
 
         return response()->json($pemeriksaan, 200);
     }
