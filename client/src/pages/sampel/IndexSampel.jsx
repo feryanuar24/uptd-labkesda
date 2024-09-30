@@ -1,83 +1,76 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getSampels, deleteSampel } from "../../api";
+import Button from "../../components/UI/Button";
 
 const IndexSampel = () => {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const navigate = useNavigate();
-
-  const [dropDownProfile, setDropDownProfile] = useState(false);
-  const [sampels, setSampels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sampels, setSampels] = useState([]);
+  const [dropDownProfile, setDropDownProfile] = useState(false);
 
   useEffect(() => {
     const fetchSampels = async () => {
+      setLoading(true);
+
       try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(
-          "http://localhost:8000/api/pemeriksaan-sampels",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await getSampels();
+        const data = await response.json();
 
         if (!response.ok) {
-          const data = await response.json();
           alert(data.message);
-          return;
+          navigate("/login");
         }
 
-        const data = await response.json();
-        setLoading(false);
         setSampels(data);
       } catch (error) {
-        console.error("Failed to fetch sampels", error);
         alert("Failed to fetch sampels");
+        console.error("Failed to fetch sampels", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchSampels();
-  }, [sampels]);
+  }, [navigate]);
 
-  const signOut = () => {
-    if (window.confirm("Are you sure you want to sign out?")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      navigate("/login");
+  const handleSignOut = () => {
+    if (!window.confirm("Are you sure you want to sign out?")) {
+      return;
     }
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
-  const deleteSampel = async (id) => {
-    if (window.confirm("Are you sure you want to delete this data?")) {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(
-          `http://localhost:8000/api/pemeriksaan-sampels/${id}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  const handleDeleteSample = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this data?")) {
+      return;
+    }
 
-        if (!response.ok) {
-          const data = await response.json();
-          alert(data.message);
-          return;
-        }
+    setLoading(true);
 
-        alert("Sampel deleted successfully");
-      } catch (error) {
-        console.error("Failed to delete sampel", error);
-        alert("Failed to delete sampel");
+    try {
+      const response = await deleteSampel(id);
+
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.message || "Failed to delete sampel");
+        return;
       }
+
+      setSampels((prevSampels) =>
+        prevSampels.filter((sampel) => sampel.id !== id)
+      );
+      alert("Sampel deleted successfully");
+    } catch (error) {
+      alert("Failed to delete sampel");
+      console.error("Failed to delete sampel", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,26 +81,12 @@ const IndexSampel = () => {
         {/* Start Header */}
         <div className="relative flex justify-between w-full items-start right-5 top-5 mb-10">
           {/* Start Create Button */}
-          <Link
-            to={"/create"}
-            className="flex space-x-2 bg-indigo-500 text-white ml-10 rounded-lg px-5 py-2 hover:bg-indigo-600 transition-colors ease-in-out duration-300 shadow-lg"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-            </svg>
-
-            <span>Create new</span>
+          <Link to={"/create"} className="ml-10">
+            <Button
+              processing={false}
+              text={"Tambah Sampel"}
+              size={"w-40 h-10"}
+            />
           </Link>
           {/* End Create Button */}
 
@@ -157,7 +136,7 @@ const IndexSampel = () => {
             </div>
             <div className="">
               <button
-                onClick={(e) => signOut()}
+                onClick={() => handleSignOut()}
                 className="w-full flex font-medium px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 dark:hover:bg-dark-icon  dark:hover:text-white hover:rounded-b-lg transition-colors ease-in-out duration-300 hover:w-full"
               >
                 Sign out
@@ -170,14 +149,14 @@ const IndexSampel = () => {
 
         {/* Start Table */}
         <div className="">
-          <table className="table-auto w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium leading-none mt-5">
+          <table className="table-auto w-full whitespace-nowrap text-gray-500 dark:text-dark-text font-medium leading-none mt-5">
             <thead className="font-semibold relative z-[1] before:absolute before:size-full before:bg-[#F4F4F4] dark:before:bg-dark-icon before:rounded-10 before:-z-[1]">
               <tr>
                 <th className="px-3.5 py-4">Nama Pasien</th>
                 <th className="px-3.5 py-4">Jenis Sampel</th>
                 <th className="px-3.5 py-4">Tanggal Pemeriksaan</th>
                 <th className="px-3.5 py-4">Hasil Pemeriksaan</th>
-                <th className="px-3.5 py-4 w-0">Action</th>
+                <th className="px-3.5 py-4 w-0">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-dark-border-three text-heading dark:text-dark-text">
@@ -221,7 +200,7 @@ const IndexSampel = () => {
                           strokeWidth={1.5}
                           stroke="currentColor"
                           className="size-6 text-slate-500 hover:text-slate-600"
-                          onClick={() => deleteSampel(sampel.id)}
+                          onClick={() => handleDeleteSample(sampel.id)}
                         >
                           <path
                             strokeLinecap="round"
@@ -244,33 +223,7 @@ const IndexSampel = () => {
       {/* Start Loading */}
       {loading && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-screen z-10 flex items-center justify-center">
-          <button
-            type="button"
-            className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed"
-            disabled
-          >
-            <svg
-              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Loading...
-          </button>
+          <Button processing={true} text={"Loading..."} size={"w-32 h-10"} />
         </div>
       )}
       {/* End Loading */}

@@ -2,15 +2,20 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { jsPDF } from "jspdf";
+import { getSampel } from "../../api";
+import Button from "../../components/UI/Button";
 
 const ShowSampel = () => {
   const { id } = useParams();
 
-  const [namaPasien, setNamaPasien] = useState("");
-  const [jenisSampel, setJenisSampel] = useState("");
-  const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState("");
-  const [hasilPemeriksaan, setHasilPemeriksaan] = useState("");
-  const [gambar, setGambar] = useState(null);
+  const [sampel, setSampel] = useState({
+    nama_pasien: "",
+    jenis_sampel: "",
+    tanggal_pemeriksaan: "",
+    hasil_pemeriksaan: "",
+    path_gambar: null,
+  });
+
   const [loading, setLoading] = useState(true);
 
   const createPDF = () => {
@@ -18,62 +23,54 @@ const ShowSampel = () => {
       const doc = new jsPDF();
 
       doc.text("Data Sampel Kesehatan Masyarakat", 10, 10);
-      doc.text(`Nama: ${namaPasien}`, 10, 20);
-      doc.text(`Jenis Sampel: ${jenisSampel}`, 10, 30);
-      doc.text(`Tanggal Pemeriksaan: ${tanggalPemeriksaan}`, 10, 40);
-      doc.text(`Hasil Pemeriksaan: ${hasilPemeriksaan}`, 10, 50);
+      doc.text(`Nama: ${sampel.nama_pasien}`, 10, 20);
+      doc.text(`Jenis Sampel: ${sampel.jenis_sampel}`, 10, 30);
+      doc.text(`Tanggal Pemeriksaan: ${sampel.tanggal_pemeriksaan}`, 10, 40);
+      doc.text(`Hasil Pemeriksaan: ${sampel.hasil_pemeriksaan}`, 10, 50);
       doc.text("Lampiran", 10, 60);
 
-      if (gambar) {
+      if (sampel.path_gambar) {
         const img = new Image();
         img.crossOrigin = "Anonymous";
-        img.src = "http://localhost:8000" + gambar;
+        img.src = "http://localhost:8000" + sampel.path_gambar;
+
         img.onload = () => {
-          doc.addImage(img, "JPEG", 10, 70, 100, 100);
-          doc.save(namaPasien + ".pdf");
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+
+          const imgData = canvas.toDataURL("image/jpeg");
+
+          doc.addImage(imgData, "JPEG", 10, 70, 100, 100);
+          doc.save(sampel.nama_pasien + ".pdf");
         };
+
         img.onerror = () => {
           console.error("Failed to load image");
-          doc.save(namaPasien + ".pdf");
+          doc.save(sampel.nama_pasien + ".pdf");
         };
       } else {
-        doc.save(namaPasien + ".pdf");
+        doc.save(sampel.nama_pasien + ".pdf");
       }
     }
   };
 
   useEffect(() => {
     const fetchSampel = async () => {
+      setLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Token not found");
-        }
-
-        const response = await fetch(
-          `http://localhost:8000/api/pemeriksaan-sampels/${id}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        const response = await getSampel(id);
         if (!response.ok) {
           throw new Error("Failed to fetch sample data");
         }
 
         const data = await response.json();
-
-        setNamaPasien(data.nama_pasien);
-        setJenisSampel(data.jenis_sampel);
-        setTanggalPemeriksaan(data.tanggal_pemeriksaan);
-        setHasilPemeriksaan(data.hasil_pemeriksaan);
-        setGambar(data.path_gambar);
+        setSampel(data);
       } catch (error) {
-        console.error(error);
         alert(error.message);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -92,25 +89,8 @@ const ShowSampel = () => {
       >
         <div className="bg-white w-[1000px] h-[500px] rounded-xl p-5 space-y-5">
           <div className="w-full flex justify-between">
-            <Link
-              to={"/"}
-              className="flex space-x-3 bg-indigo-500 hover:bg-indigo-600 transition-colors ease-in-out duration-300 text-white px-3 py-1 rounded"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="size-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                />
-              </svg>
-              <p>Back</p>
+            <Link to={"/"}>
+              <Button processing={false} text={"Kembali"} size={"w-32 h-10"} />
             </Link>
             <button onClick={createPDF}>
               <svg
@@ -134,16 +114,16 @@ const ShowSampel = () => {
               Data Sampel Kesehatan Masyarakat
             </h1>
             <div className="space-y-3">
-              <h2>Nama: {namaPasien}</h2>
-              <p>Jenis Sampel: {jenisSampel}</p>
-              <p>Tanggal Pemeriksaan: {tanggalPemeriksaan}</p>
-              <p>Hasil Pemeriksann: {hasilPemeriksaan}</p>
-              {gambar && (
+              <h2>Nama: {sampel.nama_pasien}</h2>
+              <p>Jenis Sampel: {sampel.jenis_sampel}</p>
+              <p>Tanggal Pemeriksaan: {sampel.tanggal_pemeriksaan}</p>
+              <p>Hasil Pemeriksan: {sampel.hasil_pemeriksaan}</p>
+              {sampel.path_gambar && (
                 <div>
                   <h2>Lampiran</h2>
                   <img
-                    src={"http://localhost:8000" + gambar}
-                    alt={"Lampiran milik pasien " + namaPasien}
+                    src={"http://localhost:8000" + sampel.path_gambar}
+                    alt={"Lampiran milik pasien " + sampel.nama_pasien}
                     width={200}
                     className="rounded-lg mt-2"
                   />
@@ -158,33 +138,7 @@ const ShowSampel = () => {
       {/* Start Loading */}
       {loading && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-screen z-10 flex items-center justify-center">
-          <button
-            type="button"
-            className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed"
-            disabled
-          >
-            <svg
-              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Loading...
-          </button>
+          <Button processing={true} text={"Loading..."} size={"w-32 h-10"} />
         </div>
       )}
       {/* End Loading */}
