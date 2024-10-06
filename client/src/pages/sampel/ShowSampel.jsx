@@ -8,6 +8,8 @@ import Button from "../../components/UI/Button";
 const ShowSampel = () => {
   const { id } = useParams();
 
+  const token = localStorage.getItem("token");
+
   const [sampel, setSampel] = useState({
     nama_pasien: "",
     jenis_sampel: "",
@@ -61,7 +63,7 @@ const ShowSampel = () => {
     const fetchSampel = async () => {
       setLoading(true);
       try {
-        const response = await getSampel(id);
+        const response = await getSampel(id, token);
         if (!response.ok) {
           throw new Error("Failed to fetch sample data");
         }
@@ -77,7 +79,7 @@ const ShowSampel = () => {
     };
 
     fetchSampel();
-  }, [id]);
+  }, [id, token]);
 
   return (
     <div className="relative">

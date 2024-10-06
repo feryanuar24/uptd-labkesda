@@ -1,5 +1,4 @@
 const API_URL = "http://localhost:8000";
-const token = localStorage.getItem("token");
 
 export const register = (formData) => {
   return fetch(`${API_URL}/api/register`, {
@@ -21,7 +20,7 @@ export const login = (formData) => {
   });
 };
 
-export const createSampel = (formDataToSend) => {
+export const createSampel = (token, formDataToSend) => {
   return fetch(`${API_URL}/api/pemeriksaan-sampels`, {
     method: "POST",
     headers: {
@@ -31,7 +30,7 @@ export const createSampel = (formDataToSend) => {
   });
 };
 
-export const getSampels = () => {
+export const getSampels = (token) => {
   return fetch(`${API_URL}/api/pemeriksaan-sampels`, {
     method: "GET",
     headers: {
@@ -40,7 +39,7 @@ export const getSampels = () => {
   });
 };
 
-export const getSampel = (id) => {
+export const getSampel = (id, token) => {
   return fetch(`${API_URL}/api/pemeriksaan-sampels/${id}`, {
     method: "GET",
     headers: {
@@ -49,7 +48,7 @@ export const getSampel = (id) => {
   });
 };
 
-export const updateSampel = (id, formDataToSend) => {
+export const updateSampel = (id, token, formDataToSend) => {
   return fetch(`${API_URL}/api/pemeriksaan-sampels/${id}`, {
     method: "POST",
     headers: {
@@ -59,7 +58,7 @@ export const updateSampel = (id, formDataToSend) => {
   });
 };
 
-export const deleteSampel = (id) => {
+export const deleteSampel = (id, token) => {
   return fetch(`${API_URL}/api/pemeriksaan-sampels/${id}`, {
     method: "DELETE",
     headers: {

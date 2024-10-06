@@ -51,8 +51,9 @@ const Register = () => {
         return;
       }
 
-      alert("Registration successful. Please login to continue.");
+      alert(data.message);
       navigate("/login");
+      window.open("https://mail.google.com", "_blank");
     } catch (error) {
       alert("Something went wrong. Please try again.");
       console.error("Error during registration:", error);

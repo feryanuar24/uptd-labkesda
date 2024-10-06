@@ -5,6 +5,7 @@ import Button from "../../components/UI/Button";
 
 const IndexSampel = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
 
   const [loading, setLoading] = useState(true);
@@ -16,7 +17,7 @@ const IndexSampel = () => {
       setLoading(true);
 
       try {
-        const response = await getSampels();
+        const response = await getSampels(token);
         const data = await response.json();
 
         if (!response.ok) {
@@ -34,7 +35,7 @@ const IndexSampel = () => {
     };
 
     fetchSampels();
-  }, [navigate]);
+  }, [navigate, token]);
 
   const handleSignOut = () => {
     if (!window.confirm("Are you sure you want to sign out?")) {
@@ -54,7 +55,7 @@ const IndexSampel = () => {
     setLoading(true);
 
     try {
-      const response = await deleteSampel(id);
+      const response = await deleteSampel(id, token);
 
       if (!response.ok) {
         const data = await response.json();

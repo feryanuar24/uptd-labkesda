@@ -6,6 +6,8 @@ import Button from "../../components/UI/Button";
 const CreateSampel = () => {
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+
   const [formData, setFormData] = useState({
     nama_pasien: "",
     jenis_sampel: "",
@@ -25,17 +27,10 @@ const CreateSampel = () => {
 
   const handleChange = (e) => {
     const { id, value, files } = e.target;
-    if (id === "gambar") {
-      setFormData((prevState) => ({
-        ...prevState,
-        [id]: files[0],
-      }));
-    } else {
-      setFormData((prevState) => ({
-        ...prevState,
-        [id]: value,
-      }));
-    }
+    setFormData((prevState) => ({
+      ...prevState,
+      [id]: id === "gambar" ? files[0] : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -65,7 +60,7 @@ const CreateSampel = () => {
     }
 
     try {
-      const response = await createSampel(formDataToSend);
+      const response = await createSampel(token, formDataToSend);
       const data = await response.json();
 
       if (!response.ok) {

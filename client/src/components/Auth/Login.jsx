@@ -9,16 +9,17 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    remember_token: false,
   });
-  const { email, password } = formData;
+  const { email, password, remember_token } = formData;
 
   const [processing, setProcessing] = useState(false);
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
+    const { id, type, value, checked } = e.target;
     setFormData((prevState) => ({
       ...prevState,
-      [id]: value,
+      [id]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -88,6 +89,19 @@ const Login = () => {
             onChange={handleChange}
           />
         </div>
+      </div>
+      <div className="flex justify-start items-center space-x-2 mb-5">
+        <input
+          type="checkbox"
+          name="remember_token"
+          id="remember_token"
+          className="form-input px-4 py-3.5 rounded-lg border-2"
+          checked={remember_token}
+          onChange={handleChange}
+        />
+        <label htmlFor="remember_token" className="text-sm font-label">
+          Remember me
+        </label>
       </div>
       <Button
         processing={processing}

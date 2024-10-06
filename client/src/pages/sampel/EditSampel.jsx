@@ -6,6 +6,8 @@ import Button from "../../components/UI/Button";
 const EditSampel = () => {
   const { id } = useParams();
 
+  const token = localStorage.getItem("token");
+
   const navigate = useNavigate();
 
   const [sampel, setSampel] = useState({
@@ -23,7 +25,7 @@ const EditSampel = () => {
   useEffect(() => {
     const fetchSampel = async () => {
       try {
-        const response = await getSampel(id);
+        const response = await getSampel(id, token);
         const data = await response.json();
 
         if (!response.ok) {
@@ -41,7 +43,7 @@ const EditSampel = () => {
     };
 
     fetchSampel();
-  }, [id, navigate]);
+  }, [id, navigate, token]);
 
   const handleChange = (e) => {
     const { id, value, files } = e.target;
